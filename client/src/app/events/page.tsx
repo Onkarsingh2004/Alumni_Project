@@ -93,30 +93,31 @@ export default function Events() {
                             key={event._id}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="glass-card rounded-2xl overflow-hidden hover:border-primary/30 transition-all border border-white/5 flex flex-col"
+                            className="glass-card rounded-2xl overflow-hidden hover:border-primary/30 transition-all border border-white/5 flex flex-col cursor-pointer group"
+                            onClick={() => window.location.href = `/events/${event._id}`}
                         >
-                            <div className="h-40 bg-linear-to-br from-blue-900 to-purple-900 p-6 flex flex-col justify-between relative overflow-hidden">
+                            <div className="h-40 bg-linear-to-br from-blue-900 to-purple-900 p-6 flex flex-col justify-between relative overflow-hidden group-hover:scale-105 transition-transform duration-500">
                                 <div className="absolute top-0 right-0 p-4 opacity-20">
                                     <Calendar size={100} />
                                 </div>
-                                <span className="bg-black/30 w-max px-3 py-1 rounded-full text-xs uppercase font-bold tracking-wider backdrop-blur-sm">
+                                <span className="bg-black/30 w-max px-3 py-1 rounded-full text-xs uppercase font-bold tracking-wider backdrop-blur-sm relative z-10">
                                     {event.type}
                                 </span>
-                                <div>
+                                <div className="relative z-10">
                                     <h3 className="text-2xl font-bold text-white mb-1">{new Date(event.date).toLocaleDateString()}</h3>
                                     <p className="text-white/70">{new Date(event.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                 </div>
                             </div>
 
-                            <div className="p-6 flex-1 flex flex-col">
-                                <h3 className="text-xl font-bold mb-2">{event.title}</h3>
+                            <div className="p-6 flex-1 flex flex-col bg-dark-bg/40">
+                                <h3 className="text-xl font-bold mb-2 group-hover:text-primary transition-colors">{event.title}</h3>
                                 <p className="text-text-muted text-sm mb-4 line-clamp-2">
                                     {event.description}
                                 </p>
 
                                 <div className="space-y-2 mb-6 text-sm text-text-muted">
                                     <div className="flex items-center gap-2">
-                                        <Users size={16} /> Hosted by {event.host.name}
+                                        <Users size={16} /> Hosted by {event.host?.name || 'Alumni'}
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <Video size={16} /> Online Event
@@ -125,26 +126,26 @@ export default function Events() {
 
                                 <div className="mt-auto pt-4 border-t border-white/10 flex justify-between items-center">
                                     <div className="flex -space-x-2">
-                                        {event.attendees.slice(0, 3).map((_: any, i: number) => (
+                                        {event.attendees && event.attendees.slice(0, 3).map((_: any, i: number) => (
                                             <div key={i} className="w-8 h-8 rounded-full bg-white/10 border border-dark-bg flex items-center justify-center text-xs">
                                                 <Users size={12} />
                                             </div>
                                         ))}
-                                        {event.attendees.length > 3 && (
+                                        {event.attendees && event.attendees.length > 3 && (
                                             <div className="w-8 h-8 rounded-full bg-white/10 border border-dark-bg flex items-center justify-center text-xs">
                                                 +{event.attendees.length - 3}
                                             </div>
                                         )}
                                     </div>
 
-                                    {event.attendees.includes(user?._id) ? (
+                                    {event.attendees && event.attendees.includes(user?._id) ? (
                                         <span className="text-green-400 text-sm font-bold flex items-center gap-1">
                                             Registered
                                         </span>
                                     ) : (
                                         <button
-                                            onClick={() => handleRegister(event._id)}
-                                            className="text-primary hover:text-white font-medium text-sm transition-colors"
+                                            onClick={(e) => { e.stopPropagation(); handleRegister(event._id); }}
+                                            className="text-primary hover:text-white font-medium text-sm transition-colors z-20 relative"
                                         >
                                             Register Now
                                         </button>

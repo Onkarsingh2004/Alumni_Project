@@ -131,7 +131,8 @@ export default function Mentors() {
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: idx * 0.1 }}
-                            className="glass-card p-6 rounded-2xl border border-white/5 hover:border-primary/30 transition-all group relative overflow-hidden"
+                            onClick={() => router.push(`/mentors/${mentor._id}`)}
+                            className="glass-card p-6 rounded-2xl border border-white/5 hover:border-primary/30 transition-all group relative overflow-hidden cursor-pointer"
                         >
                             <div className="absolute top-0 right-0 p-4 opacity-50">
                                 <GraduationCap size={40} className="text-white/5 rotate-12" />
@@ -168,7 +169,7 @@ export default function Mentors() {
                             </div>
 
                             <button
-                                onClick={() => openRequestModal(mentor)}
+                                onClick={(e) => { e.stopPropagation(); openRequestModal(mentor); }}
                                 className="w-full bg-white/5 hover:bg-white/10 text-white border border-white/10 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 group-hover:bg-primary group-hover:border-primary"
                             >
                                 <MessageCircle size={18} /> Request Mentorship

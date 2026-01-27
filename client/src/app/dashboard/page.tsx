@@ -10,6 +10,7 @@ import { Clock, CheckCircle, XCircle, MessageSquare } from 'lucide-react';
 export default function Dashboard() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
+    const [profile, setProfile] = useState<any>(null);
     const [requests, setRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -20,8 +21,26 @@ export default function Dashboard() {
         if (!token || !userData) {
             router.push('/login');
         } else {
-            setUser(JSON.parse(userData));
+            const initialUser = JSON.parse(userData);
+            setUser(initialUser);
             fetchRequests(token);
+
+            // Fetch latest user data (avatar) and profile details
+            axios.get('http://localhost:5000/api/profiles/me', {
+                headers: { Authorization: `Bearer ${token}` }
+            }).then(res => {
+                if (res.data) {
+                    setProfile(res.data); // Store full profile
+                }
+                if (res.data.user) {
+                    const updatedUser = { ...initialUser, ...res.data.user };
+                    setUser(updatedUser);
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                }
+            }).catch(err => {
+                // If profile doesn't exist yet, that's fine, we just stick with initialUser
+                console.log('Profile fetch check:', err);
+            });
         }
     }, [router]);
 
@@ -61,8 +80,18 @@ export default function Dashboard() {
             <DashboardNavbar />
 
             <div className="max-w-7xl mx-auto p-6">
-                <div className="glass-card p-8 rounded-2xl mb-8 flex justify-between items-center bg-linear-to-r from-blue-900/20 to-purple-900/20">
-                    <div>
+                <div className="glass-card p-8 rounded-2xl mb-8 flex flex-col md:flex-row gap-6 items-center bg-linear-to-r from-blue-900/20 to-purple-900/20">
+                    <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-4 border-white/10 shrink-0 shadow-lg bg-dark-bg">
+                        {user.avatar ? (
+                            <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-3xl font-bold">
+                                {user.name?.charAt(0)}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex-1 text-center md:text-left">
                         <h1 className="text-3xl font-bold">Welcome back, {user.name}!</h1>
                         <p className="text-text-muted mt-2 capitalize">Role: <span className={`text-white px-2 py-0.5 rounded text-sm ${user.role === 'alumni' ? 'bg-secondary' : 'bg-primary'}`}>{user.role}</span></p>
                     </div>
@@ -164,6 +193,69 @@ export default function Dashboard() {
                                     <p className="text-xs text-text-muted">Events</p>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Profile Details Card */}
+                        <div className="glass-card p-6 rounded-xl">
+                            <h3 className="text-lg font-bold mb-4">Your Profile</h3>
+                            {profile ? (
+                                <div className="space-y-4 text-sm">
+                                    {user.role === 'alumni' ? (
+                                        <>
+                                            <div>
+                                                <p className="text-text-muted text-xs uppercase tracking-wider">Current Role</p>
+                                                <p className="text-white font-medium">{profile.role} at {profile.company}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-text-muted text-xs uppercase tracking-wider">Experience</p>
+                                                <p className="text-white font-medium">{profile.experience} Years</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-text-muted text-xs uppercase tracking-wider">Domain</p>
+                                                <p className="text-white font-medium">{profile.domain}</p>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <p className="text-text-muted text-xs uppercase tracking-wider">University Info</p>
+                                                <p className="text-white font-medium">{profile.branch}</p>
+                                                <p className="text-text-muted">{profile.year} Year</p>
+                                            </div>
+                                            {profile.universityId && (
+                                                <div>
+                                                    <p className="text-text-muted text-xs uppercase tracking-wider">ID</p>
+                                                    <p className="text-white font-medium">{profile.universityId}</p>
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {profile.skills && profile.skills.length > 0 && (
+                                        <div>
+                                            <p className="text-text-muted text-xs uppercase tracking-wider mb-2">Skills</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {profile.skills.slice(0, 5).map((skill: string, i: number) => (
+                                                    <span key={i} className="px-2 py-1 bg-white/5 rounded text-xs border border-white/5">
+                                                        {skill}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <button onClick={() => router.push('/profile')} className="w-full mt-2 text-primary text-sm hover:underline">
+                                        Edit Profile
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="text-center py-4">
+                                    <p className="text-text-muted text-sm mb-4">Profile not completed yet.</p>
+                                    <button onClick={() => router.push('/profile')} className="bg-primary/20 text-primary px-4 py-2 rounded-lg text-sm w-full">
+                                        Complete Profile
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

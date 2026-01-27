@@ -1,11 +1,32 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 import { GraduationCap, LogOut, User, Users, Briefcase, Calendar, MessageCircle } from 'lucide-react';
 
 export default function DashboardNavbar() {
     const router = useRouter();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        const fetchUnread = async () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    const res = await axios.get('http://localhost:5000/api/messages/unread-count', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    setUnreadCount(res.data.count);
+                } catch (err) { }
+            }
+        };
+        fetchUnread();
+
+        // Listen for custom event 'message_received' if we wanted (or just poll/refresh)
+        // For now simple fetch on mount
+    }, []);
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -27,6 +48,17 @@ export default function DashboardNavbar() {
                     </Link>
                     <Link href="/events" className="flex items-center gap-2 text-text-muted hover:text-white transition-colors">
                         <Calendar size={18} /> <span className="hidden md:inline">Events</span>
+                    </Link>
+                    <Link href="/messages" className="flex items-center gap-2 text-text-muted hover:text-white transition-colors relative">
+                        <div className="relative">
+                            <MessageCircle size={18} />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center text-white font-bold border border-dark-bg">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </div>
+                        <span className="hidden md:inline">Messages</span>
                     </Link>
                     <Link href="/community" className="flex items-center gap-2 text-text-muted hover:text-white transition-colors">
                         <MessageCircle size={18} /> <span className="hidden md:inline">Community</span>

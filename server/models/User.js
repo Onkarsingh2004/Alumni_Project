@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema({
             'Please add a valid email',
         ],
     },
+    avatar: {
+        type: String, // URL to image
+        default: ''
+    },
     password: {
         type: String,
         required: [true, 'Please add a password'],
@@ -34,12 +38,14 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
+    resetPasswordOtp: String,
+    resetPasswordExpire: Date,
 });
 
 // Encrypt password using bcrypt
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        next();
+        return;
     }
 
     const salt = await bcrypt.genSalt(10);

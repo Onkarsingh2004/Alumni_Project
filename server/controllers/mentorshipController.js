@@ -1,5 +1,6 @@
 const MentorshipRequest = require('../models/MentorshipRequest');
 const User = require('../models/User');
+const Message = require('../models/Message');
 
 // @desc    Request mentorship
 // @route   POST /api/mentorship/request
@@ -24,6 +25,15 @@ const requestMentorship = async (req, res) => {
             alumni: alumniId,
             message
         });
+
+        // Auto-send initial message to start conversation in chat
+        if (message) {
+            await Message.create({
+                sender: req.user.id,
+                receiver: alumniId,
+                content: `[Mentorship Request] ${message}`
+            });
+        }
 
         res.status(201).json(request);
     } catch (error) {

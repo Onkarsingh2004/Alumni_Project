@@ -84,8 +84,96 @@ const getMe = async (req, res) => {
     res.status(200).json(req.user);
 };
 
+const sendEmail = require('../utils/sendEmail');
+
+// @desc    Forgot Password
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Generate OTP
+        const otp = Math.floor(100000 + Math.random() * 900000);
+
+        // Set expiry (10 mins)
+        const expiryDate = new Date();
+        expiryDate.setMinutes(expiryDate.getMinutes() + 10);
+
+        user.resetPasswordOtp = otp;
+        user.resetPasswordExpire = expiryDate;
+
+        await user.save();
+
+        const message = `Your password reset OTP is ${otp}. It expires in 10 minutes.`;
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Password Reset OTP',
+                message
+            });
+
+            res.status(200).json({ success: true, data: 'Email sent' });
+        } catch (err) {
+            console.error(err);
+            user.resetPasswordOtp = undefined;
+            user.resetPasswordExpire = undefined;
+            await user.save();
+
+            // Fallback for dev without SMTP
+            if (process.env.NODE_ENV !== 'production' && !process.env.SMTP_EMAIL) {
+                return res.status(200).json({ success: true, data: 'Email sent (Simulation)', otp: otp });
+            }
+
+            return res.status(500).json({ message: 'Email could not be sent' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Reset Password
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+    const { email, otp, password } = req.body;
+
+    try {
+        // Find user with matching email and OTP, and ensure OTP isn't expired
+        const user = await User.findOne({
+            email,
+            resetPasswordOtp: otp,
+            resetPasswordExpire: { $gt: Date.now() }
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid OTP or expired' });
+        }
+
+        // Set new password
+        user.password = password;
+        user.resetPasswordOtp = undefined;
+        user.resetPasswordExpire = undefined;
+
+        await user.save();
+
+        res.status(200).json({ success: true, data: 'Password updated successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 module.exports = {
     registerUser,
     loginUser,
     getMe,
+    forgotPassword,
+    resetPassword
 };

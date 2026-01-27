@@ -1,22 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import DashboardNavbar from '@/components/DashboardNavbar';
 import { motion } from 'framer-motion';
-import { Save, AlertCircle } from 'lucide-react';
+import { Save, AlertCircle, Camera, User as UserIcon } from 'lucide-react';
 
 export default function Profile() {
     const router = useRouter();
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [user, setUser] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
     const [message, setMessage] = useState('');
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
 
     // Unified state for both roles
     const [formData, setFormData] = useState({
-        // Student fields
+        // ... (existing fields)
         universityId: '',
         branch: '',
         year: '',
@@ -29,7 +31,8 @@ export default function Profile() {
         skills: '',
         linkedin: '',
         github: '',
-        isMentorshipAvailable: true
+        isMentorshipAvailable: true,
+        avatar: '' // Add avatar field
     });
 
     useEffect(() => {
@@ -41,10 +44,14 @@ export default function Profile() {
             return;
         }
 
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        if (parsedUser.avatar) setImagePreview(parsedUser.avatar);
 
         // Fetch existing profile
         const fetchProfile = async () => {
+            // ... existing fetch logic
+            // I will maintain the existing logic but just update this block
             try {
                 const res = await axios.get('http://localhost:5000/api/profiles/me', {
                     headers: { Authorization: `Bearer ${token}` }
@@ -62,10 +69,11 @@ export default function Profile() {
                     skills: data.skills ? data.skills.join(', ') : '',
                     linkedin: data.linkedin || '',
                     github: data.github || '',
-                    isMentorshipAvailable: data.isMentorshipAvailable ?? true
+                    isMentorshipAvailable: data.isMentorshipAvailable ?? true,
+                    avatar: data.user?.avatar || '' // Assuming populated
                 });
+                if (data.user?.avatar) setImagePreview(data.user.avatar);
             } catch (err) {
-                // If 404, it just means no profile creates yet
                 console.log("No profile found or error fetching");
             } finally {
                 setFetching(false);
@@ -74,6 +82,26 @@ export default function Profile() {
 
         fetchProfile();
     }, [router]);
+
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+                // Here we would typically upload the file or set it to formData
+                // For this demo, let's assume we might send base64 or just show preview
+                setFormData(prev => ({ ...prev, avatar: reader.result as string }));
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // ... (onChange, onSubmit)
+
+    // Render part
+    // ...
+
 
     const onChange = (e: any) => {
         const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -98,7 +126,9 @@ export default function Profile() {
             });
 
             setMessage('Profile updated successfully!');
-            setTimeout(() => setMessage(''), 3000);
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 1000);
         } catch (err: any) {
             setMessage(err.response?.data?.message || 'Error updating profile');
         } finally {
@@ -130,6 +160,37 @@ export default function Profile() {
                     )}
 
                     <form onSubmit={onSubmit} className="space-y-6">
+
+                        {/* Profile Image Upload */}
+                        <div className="flex flex-col items-center mb-8">
+                            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white/10 group-hover:border-primary transition-all shadow-xl bg-dark-bg relative">
+                                    {imagePreview ? (
+                                        <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-blue-500 to-purple-600">
+                                            <span className="text-4xl font-bold text-white">{user?.name?.charAt(0)}</span>
+                                        </div>
+                                    )}
+
+                                    {/* Overlay */}
+                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                                        <Camera size={32} className="text-white" />
+                                    </div>
+                                </div>
+                                <div className="absolute bottom-0 right-0 bg-primary p-2 rounded-full border-4 border-dark-bg">
+                                    <Camera size={16} className="text-white" />
+                                </div>
+                            </div>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                className="hidden"
+                                accept="image/*"
+                                onChange={handleImageChange}
+                            />
+                            <p className="text-sm text-text-muted mt-3">Click to upload photo</p>
+                        </div>
 
                         {/* Common Fields */}
                         <div className="grid md:grid-cols-2 gap-6">

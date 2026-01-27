@@ -5,11 +5,19 @@ const User = require('../models/User');
 // @desc    Create or update user profile
 // @route   POST /api/profiles
 // @access  Private
+// @desc    Create or update user profile
+// @route   POST /api/profiles
+// @access  Private
 const updateProfile = async (req, res) => {
     const { role } = req.user;
-    const profileData = req.body;
+    const { avatar, ...profileData } = req.body; // Extract avatar to update User model
 
     try {
+        // Update User avatar if provided
+        if (avatar) {
+            await User.findByIdAndUpdate(req.user.id, { avatar });
+        }
+
         let profile;
 
         if (role === 'student') {
@@ -60,9 +68,9 @@ const getMyProfile = async (req, res) => {
     try {
         let profile;
         if (req.user.role === 'student') {
-            profile = await StudentProfile.findOne({ user: req.user.id }).populate('user', 'name email');
+            profile = await StudentProfile.findOne({ user: req.user.id }).populate('user', 'name email avatar');
         } else if (req.user.role === 'alumni') {
-            profile = await AlumniProfile.findOne({ user: req.user.id }).populate('user', 'name email');
+            profile = await AlumniProfile.findOne({ user: req.user.id }).populate('user', 'name email avatar');
         }
 
         if (!profile) {
@@ -94,10 +102,29 @@ const getAllAlumni = async (req, res) => {
             query.skills = { $in: skills.split(',') };
         }
 
-        const alumni = await AlumniProfile.find(query).populate('user', 'name email');
+        const alumni = await AlumniProfile.find(query).populate('user', 'name email avatar');
         res.json(alumni);
     } catch (error) {
         console.error(error);
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+// @desc    Get alumni profile by ID
+// @route   GET /api/profiles/alumni/:id
+// @access  Private
+const getAlumniById = async (req, res) => {
+    try {
+        const profile = await AlumniProfile.findById(req.params.id).populate('user', 'name email avatar');
+        if (!profile) {
+            return res.status(404).json({ message: 'Profile not found' });
+        }
+        res.json(profile);
+    } catch (error) {
+        console.error(error);
+        if (error.kind === 'ObjectId') {
+            return res.status(404).json({ message: 'Profile not found' });
+        }
         res.status(500).json({ message: 'Server Error' });
     }
 };
@@ -106,4 +133,5 @@ module.exports = {
     updateProfile,
     getMyProfile,
     getAllAlumni,
+    getAlumniById
 };

@@ -59,8 +59,28 @@ const registerEvent = async (req, res) => {
     }
 };
 
+// @desc    Get single event
+// @route   GET /api/events/:id
+// @access  Private
+const getEventById = async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.id)
+            .populate('host', 'name email')
+            .populate('attendees', 'name email'); // Populate attendees to show who is coming
+
+        if (!event) {
+            return res.status(404).json({ message: 'Event not found' });
+        }
+
+        res.json(event);
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
 module.exports = {
     getEvents,
     createEvent,
-    registerEvent
+    registerEvent,
+    getEventById
 };
