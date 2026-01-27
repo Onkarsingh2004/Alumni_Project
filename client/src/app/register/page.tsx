@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, GraduationCap, Lock, Mail, ArrowRight } from 'lucide-react';
+import { User, GraduationCap, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 import axios from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -13,26 +13,56 @@ export default function Register() {
         name: '',
         email: '',
         password: '',
+        confirmPassword: '',
         role: 'student',
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    const { name, email, password, role } = formData;
+    const { name, email, password, confirmPassword, role } = formData;
 
     const onChange = (e: React.ChangeEvent<HTMLInputElement>) =>
         setFormData({ ...formData, [e.target.name]: e.target.value });
 
     const setRole = (r: string) => setFormData({ ...formData, role: r });
 
+    const validateForm = () => {
+        if (!name || name.trim().length < 2) {
+            setError('Name must be at least 2 characters long');
+            return false;
+        }
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            setError('Please enter a valid email address');
+            return false;
+        }
+        if (!password || password.length < 6) {
+            setError('Password must be at least 6 characters long');
+            return false;
+        }
+        if (password !== confirmPassword) {
+            setError('Passwords do not match');
+            return false;
+        }
+        return true;
+    };
+
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setError('');
 
+        if (!validateForm()) {
+            return;
+        }
+
+        setLoading(true);
+
         try {
+            // Remove confirmPassword before sending to API
+            const { confirmPassword, ...dataToSend } = formData;
+
             // Assuming backend is running on port 5000
-            const res = await axios.post('http://localhost:5000/api/auth/register', formData);
+            const res = await axios.post('http://localhost:5000/api/auth/register', dataToSend);
             console.log(res.data);
             // Save token (in real app, use safer storage or cookies)
             localStorage.setItem('token', res.data.token);
@@ -77,8 +107,8 @@ export default function Register() {
                             type="button"
                             onClick={() => setRole('student')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${role === 'student'
-                                    ? 'bg-primary text-white shadow-lg'
-                                    : 'text-text-muted hover:text-white'
+                                ? 'bg-primary text-white shadow-lg'
+                                : 'text-text-muted hover:text-white'
                                 }`}
                         >
                             <User size={16} /> Student
@@ -87,8 +117,8 @@ export default function Register() {
                             type="button"
                             onClick={() => setRole('alumni')}
                             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${role === 'alumni'
-                                    ? 'bg-secondary text-white shadow-lg'
-                                    : 'text-text-muted hover:text-white'
+                                ? 'bg-secondary text-white shadow-lg'
+                                : 'text-text-muted hover:text-white'
                                 }`}
                         >
                             <GraduationCap size={16} /> Alumni
@@ -129,6 +159,19 @@ export default function Register() {
                             value={password}
                             onChange={onChange}
                             placeholder="Password"
+                            className="w-full bg-dark-bg/50 border border-white/10 rounded-xl px-10 py-3 text-white placeholder-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                            required
+                        />
+                    </div>
+
+                    <div className="relative">
+                        <ShieldCheck className="absolute left-3 top-3.5 h-5 w-5 text-text-muted" />
+                        <input
+                            type="password"
+                            name="confirmPassword"
+                            value={confirmPassword}
+                            onChange={onChange}
+                            placeholder="Confirm Password"
                             className="w-full bg-dark-bg/50 border border-white/10 rounded-xl px-10 py-3 text-white placeholder-text-muted focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
                             required
                         />

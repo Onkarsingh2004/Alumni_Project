@@ -21,10 +21,28 @@ export default function Login() {
     const onChange = (e: React.ChangeEvent<HTMLInputElement>) =>
         setFormData({ ...formData, [e.target.name]: e.target.value });
 
+    const validateForm = () => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+            setError('Please enter a valid email address');
+            return false;
+        }
+        if (!password) {
+            setError('Please enter your password');
+            return false;
+        }
+        return true;
+    };
+
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setLoading(true);
         setError('');
+
+        if (!validateForm()) {
+            return;
+        }
+
+        setLoading(true);
 
         try {
             const res = await axios.post('http://localhost:5000/api/auth/login', formData);
