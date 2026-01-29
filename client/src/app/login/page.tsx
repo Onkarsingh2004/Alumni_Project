@@ -21,18 +21,32 @@ export default function Login() {
     const onChange = (e: React.ChangeEvent<HTMLInputElement>) =>
         setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const validateForm = () => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!email || !emailRegex.test(email)) {
-            setError('Please enter a valid email address');
-            return false;
-        }
-        if (!password) {
-            setError('Please enter your password');
-            return false;
-        }
-        return true;
-    };
+   const validateForm = () => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!email || !emailRegex.test(email)) {
+    setError("Please enter a valid email address");
+    return false;
+  }
+
+  const strongPassword =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+  if (!password) {
+    setError("Please enter your password");
+    return false;
+  }
+
+  if (!strongPassword.test(password)) {
+    setError(
+      "Password must be at least 8 characters and include uppercase, lowercase, number, and special symbol"
+    );
+    return false;
+  }
+
+  return true;
+};
+
 
     const onSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,7 +64,7 @@ export default function Login() {
             localStorage.setItem('user', JSON.stringify(res.data));
             router.push('/dashboard');
         } catch (err: any) {
-            setError(err.response?.data?.message || 'Login failed');
+            setError(err.response?.data?.message || 'Enter Valid Username And Password');
         } finally {
             setLoading(false);
         }
